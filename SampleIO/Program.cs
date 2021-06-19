@@ -13,7 +13,7 @@ namespace SampleIO
 
         private static int Main(string[] args)
         {
-            if (args.Length is < 2 or > 4)
+            if (args.Length is < 1 or > 4)
             {
                 PrintMessage("Random data generator", ConsoleColor.DarkGray);
                 PrintInstructions();
@@ -24,7 +24,7 @@ namespace SampleIO
             try
             {
                 filesCount = Convert.ToInt32(args[0]);
-                if (!int.TryParse(args[1], out itemsPerFile))
+                if (args.Length == 1 || !int.TryParse(args[1], out itemsPerFile))
                     itemsPerFile = 200;
             }
             catch (FormatException)
@@ -35,16 +35,16 @@ namespace SampleIO
             }
 
             var verbose = args.Contains("--verbose");
+            var deletePreviousFiles = args.Contains("--deletePrevious");
 
-            if (verbose) PrintMessage($"Creating {filesCount} files with {itemsPerFile} items...", ConsoleColor.Green);
             var fullFilePath = Path.Join(Environment.CurrentDirectory, FilePath);
-
-            if (Directory.GetFiles(fullFilePath).Length > 0)
+            if (deletePreviousFiles && Directory.GetFiles(fullFilePath).Length > 0)
             {
                 if (verbose) PrintMessage($"Deleting previous files on {fullFilePath}");
                 foreach (var file in Directory.GetFiles(fullFilePath)) File.Delete(file);
             }
 
+            if (verbose) PrintMessage($"Creating {filesCount} files with {itemsPerFile} items...", ConsoleColor.Green);
             for (var fileIndex = 0; fileIndex < filesCount; fileIndex++)
             {
                 if (verbose) PrintMessage($"Generating data for file {fileIndex}...");
@@ -75,7 +75,8 @@ namespace SampleIO
             instructionsBuilder.AppendLine("Usage:");
             instructionsBuilder.AppendLine("filesCount: int - Number of files to generate");
             instructionsBuilder.AppendLine("itemsPerFile: int = 200 - Number of items per file");
-            instructionsBuilder.AppendLine("--verbose: bool - Show additional messages");
+            instructionsBuilder.AppendLine("--verbose - Show additional messages");
+            instructionsBuilder.AppendLine("--deletePrevious - Clear the output folder before run");
 
             Console.WriteLine(instructionsBuilder.ToString());
         }
