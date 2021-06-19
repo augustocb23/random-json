@@ -1,9 +1,7 @@
 ﻿using System;
-using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using System.IO;
+using System.Linq;
+using System.Text;
 using JsonStores;
 using JsonStores.NamingStrategies;
 
@@ -15,43 +13,71 @@ namespace SampleIO
 
         private static int Main(string[] args)
         {
-            var rootCommand = new RootCommand("Random data generator")
+            if (args.Length is < 2 or > 4)
             {
-                new Argument<int>("filesCount", "Number of files to generate."),
-                new Argument<int>("itemsPerFile", () => 200, "Number of items per file.")
-            };
-            rootCommand.Handler = CommandHandler.Create((int filesCount, int itemsPerFile, bool verbose) =>
-            {
-                if (verbose) PrintMessage($"Creating {filesCount} files with {itemsPerFile} items...", ConsoleColor.Green);
-                var fullFilePath = Path.Join(Environment.CurrentDirectory, FilePath);
+                PrintMessage("Random data generator", ConsoleColor.DarkGray);
+                PrintInstructions();
+            }
 
-                for (var fileIndex = 0; fileIndex < filesCount; fileIndex++)
+            int filesCount;
+            int itemsPerFile;
+            try
+            {
+                filesCount = Convert.ToInt32(args[0]);
+                if (!int.TryParse(args[1], out itemsPerFile))
+                    itemsPerFile = 200;
+            }
+            catch (FormatException)
+            {
+                PrintMessage("Invalid parameters!", ConsoleColor.Red);
+                PrintInstructions();
+                return 1;
+            }
+
+            var verbose = args.Contains("--verbose");
+
+            if (verbose) PrintMessage($"Creating {filesCount} files with {itemsPerFile} items...", ConsoleColor.Green);
+            var fullFilePath = Path.Join(Environment.CurrentDirectory, FilePath);
+
+            if (Directory.GetFiles(fullFilePath).Length > 0)
+            {
+                if (verbose) PrintMessage($"Deleting previous files on {fullFilePath}");
+                foreach (var file in Directory.GetFiles(fullFilePath)) File.Delete(file);
+            }
+
+            for (var fileIndex = 0; fileIndex < filesCount; fileIndex++)
+            {
+                if (verbose) PrintMessage($"Generating data for file {fileIndex}...");
+                var items = new JsonRepository<FileItem, int>(new JsonStoreOptions
                 {
-                    if (verbose) PrintMessage($"Generating data for file {fileIndex}...");
-                    var items = new JsonRepository<FileItem, int>(new JsonStoreOptions
-                    {
-                        NamingStrategy = new StaticNamingStrategy(GetRandomString()),
-                        Location = fullFilePath,
-                        ThrowOnSavingChangedFile = false
-                    });
+                    NamingStrategy = new StaticNamingStrategy(GetRandomString()),
+                    Location = fullFilePath,
+                    ThrowOnSavingChangedFile = false
+                });
 
-                    for (var itemIndex = 0; itemIndex < itemsPerFile; itemIndex++)
-                        items.AddAsync(new FileItem {Id = itemIndex, Data = GetRandomString()}).Wait();
+                for (var itemIndex = 0; itemIndex < itemsPerFile; itemIndex++)
+                    items.AddAsync(new FileItem {Id = itemIndex, Data = GetRandomString()}).Wait();
 
-                    if (verbose) PrintMessage($"Data generated. Saving file {fileIndex}...");
-                    items.SaveChangesAsync().Wait();
+                if (verbose) PrintMessage($"Data generated. Saving file {fileIndex}...");
+                items.SaveChangesAsync().Wait();
 
-                    if (verbose) PrintMessage($"File {fileIndex} saved.");
-                }
+                if (verbose) PrintMessage($"File {fileIndex} saved.");
+            }
 
-                if (verbose) PrintMessage($"{filesCount} files created on {fullFilePath}.", ConsoleColor.Green);
-                return 0;
-            });
+            if (verbose) PrintMessage($"{filesCount} files created on {fullFilePath}.", ConsoleColor.Green);
+            return 0;
+        }
 
-            return new CommandLineBuilder(rootCommand)
-                .UseDefaults()
-                .AddGlobalOption(new Option<bool>("--verbose", "Show additional messages"))
-                .Build().InvokeAsync(args).Result;
+        private static void PrintInstructions()
+        {
+            var instructionsBuilder = new StringBuilder();
+            instructionsBuilder.AppendLine();
+            instructionsBuilder.AppendLine("Usage:");
+            instructionsBuilder.AppendLine("filesCount: int - Number of files to generate");
+            instructionsBuilder.AppendLine("itemsPerFile: int = 200 - Number of items per file");
+            instructionsBuilder.AppendLine("--verbose: bool - Show additional messages");
+
+            Console.WriteLine(instructionsBuilder.ToString());
         }
 
         private static string GetRandomString() => Guid.NewGuid().ToString("N");
