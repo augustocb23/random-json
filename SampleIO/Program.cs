@@ -15,7 +15,7 @@ namespace SampleIO
         {
             if (args.Length is < 1 or > 4)
             {
-                PrintMessage("Random data generator", ConsoleColor.DarkGray);
+                PrintMessage("Random JSON creator", ConsoleColor.DarkGray);
                 PrintInstructions();
             }
 
