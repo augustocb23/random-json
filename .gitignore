@@ -1,0 +1,13 @@
+# IDEs configurations
+.vs/
+.vscode/
+.idea/
+
+# program output
+out/
+
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
