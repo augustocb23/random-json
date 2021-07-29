@@ -1,4 +1,6 @@
-﻿# Random JSON creator
+# Random JSON creator
+
+>Moved to [JsonStores/](https://github.com/augustocb23/json-stores)[Samples/](https://github.com/augustocb23/json-stores/tree/master/Samples)[RandomJsonCreator](https://github.com/augustocb23/json-stores/tree/master/Samples/RandomJsonCreator).
 
 A sample console app to create JSON files with random (GUID) data.
 
